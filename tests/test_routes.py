@@ -194,7 +194,6 @@ class TestAccountService(TestCase):
         account = self._create_accounts(1)[0]
         response = self.client.delete(f"{BASE_URL}/{account.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
         # Verify it no longer exists
         get_resp = self.client.get(f"{BASE_URL}/{account.id}")
         self.assertEqual(get_resp.status_code, status.HTTP_404_NOT_FOUND)
@@ -228,3 +227,4 @@ class TestAccountService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Check for the CORS header
         self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "*")
+        

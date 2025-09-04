@@ -25,6 +25,8 @@ HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 ######################################################################
 #  T E S T   C A S E S
 ######################################################################
+
+
 class TestAccountService(TestCase):
     """Account Service Tests"""
 
@@ -56,6 +58,7 @@ class TestAccountService(TestCase):
     ######################################################################
     #  H E L P E R   M E T H O D S
     ######################################################################
+
 
     def _create_accounts(self, count):
         """Factory method to create accounts in bulk"""
@@ -198,7 +201,7 @@ class TestAccountService(TestCase):
         """It should return 204 when deleting a non-existent Account"""
         response = self.client.delete(f"{BASE_URL}/999999")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        
+     
     def test_method_not_allowed(self):
         """It should return 405 Method Not Allowed for invalid methods"""
         response = self.client.put(BASE_URL)  # PUT is not valid for collection

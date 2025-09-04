@@ -44,8 +44,8 @@ jobs:
           flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 service tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-            - name: Run Unit Tests with Coverage
+      - name: Run Unit Tests with Coverage
         env:
           DATABASE_URI: postgresql://postgres:pgs3cr3t@postgres:5432/testdb
-          run: |
-            nosetests -vv --with-spec --spec-color --with-coverage --cover-erase --cover-package=service
+        run: |
+          nosetests -vv --with-spec --spec-color --with-coverage --cover-erase --cover-package=service

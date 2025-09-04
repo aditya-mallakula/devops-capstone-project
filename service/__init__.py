@@ -6,12 +6,24 @@ and SQL database
 """
 import sys
 from flask import Flask
+from flask_talisman import Talisman
 from service import config
 from service.common import log_handlers
+from flask_cors import CORS
+
 
 # Create Flask application
 app = Flask(__name__)
 app.config.from_object(config)
+
+# Enable security headers
+talisman = Talisman(app)
+
+# Enable CORS
+CORS(app)
+
+# Expose for tests
+__all__ = ["app", "talisman"]
 
 # Import the routes After the Flask app is created
 # pylint: disable=wrong-import-position, cyclic-import, wrong-import-order

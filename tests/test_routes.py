@@ -14,17 +14,17 @@ from service.models import db, Account, init_db
 # from service.routes import app
 from service import app, talisman
 
-
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
 )
 
 BASE_URL = "/accounts"
-HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
+HTTPS_ENVIRON = {"wsgi.url_scheme": "https"}
 
 ######################################################################
 #  T E S T   C A S E S
 ######################################################################
+
 class TestAccountService(TestCase):
     """Account Service Tests"""
 
@@ -95,14 +95,12 @@ class TestAccountService(TestCase):
         response = self.client.post(
             BASE_URL,
             json=account.serialize(),
-            content_type="application/json"
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
         # Make sure location header is set
         location = response.headers.get("Location", None)
         self.assertIsNotNone(location)
-
         # Check the data is correct
         new_account = response.get_json()
         self.assertEqual(new_account["name"], account.name)
@@ -122,14 +120,14 @@ class TestAccountService(TestCase):
         response = self.client.post(
             BASE_URL,
             json=account.serialize(),
-            content_type="test/html"
+            content_type="test/html",
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    # ADD YOUR TEST CASES HERE ...
     ######################################################################
     #  L I S T   A C C O U N T S
     ######################################################################
+
     def test_list_accounts(self):
         """It should List all Accounts"""
         self._create_accounts(5)
@@ -148,6 +146,7 @@ class TestAccountService(TestCase):
     ######################################################################
     #  R E A D   A C C O U N T
     ######################################################################
+
     def test_read_account(self):
         """It should Read a single Account"""
         account = self._create_accounts(1)[0]
@@ -165,6 +164,7 @@ class TestAccountService(TestCase):
     ######################################################################
     #  U P D A T E   A C C O U N T
     ######################################################################
+
     def test_update_account(self):
         """It should Update an existing Account"""
         account = self._create_accounts(1)[0]
@@ -184,12 +184,12 @@ class TestAccountService(TestCase):
     ######################################################################
     #  D E L E T E   A C C O U N T
     ######################################################################
+
     def test_delete_account(self):
         """It should Delete an Account"""
         account = self._create_accounts(1)[0]
         response = self.client.delete(f"{BASE_URL}/{account.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
         # Verify it no longer exists
         get_resp = self.client.get(f"{BASE_URL}/{account.id}")
         self.assertEqual(get_resp.status_code, status.HTTP_404_NOT_FOUND)
@@ -198,7 +198,7 @@ class TestAccountService(TestCase):
         """It should return 204 when deleting a non-existent Account"""
         response = self.client.delete(f"{BASE_URL}/999999")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        
+
     def test_method_not_allowed(self):
         """It should return 405 Method Not Allowed for invalid methods"""
         response = self.client.put(BASE_URL)  # PUT is not valid for collection
@@ -206,20 +206,20 @@ class TestAccountService(TestCase):
 
     def test_security_headers(self):
         """It should return security headers"""
-        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        response = self.client.get("/", environ_overrides=HTTPS_ENVIRON)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         headers = {
-            'X-Frame-Options': 'SAMEORIGIN',
-            'X-Content-Type-Options': 'nosniff',
+            "X-Frame-Options": "SAMEORIGIN",
+            "X-Content-Type-Options": "nosniff",
             "Content-Security-Policy": "default-src 'self'; object-src 'none'",
-            'Referrer-Policy': 'strict-origin-when-cross-origin'
+            "Referrer-Policy": "strict-origin-when-cross-origin",
         }
         for key, value in headers.items():
             self.assertEqual(response.headers.get(key), value)
 
     def test_cors_security(self):
         """It should return a CORS header"""
-        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        response = self.client.get("/", environ_overrides=HTTPS_ENVIRON)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Check for the CORS header
-        self.assertEqual(response.headers.get('Access-Control-Allow-Origin'), '*')
+        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "*")

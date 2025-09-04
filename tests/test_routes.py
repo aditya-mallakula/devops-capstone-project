@@ -198,7 +198,7 @@ class TestAccountService(TestCase):
         """It should return 204 when deleting a non-existent Account"""
         response = self.client.delete(f"{BASE_URL}/999999")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
+        
     def test_method_not_allowed(self):
         """It should return 405 Method Not Allowed for invalid methods"""
         response = self.client.put(BASE_URL)  # PUT is not valid for collection

@@ -20,21 +20,6 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: DATABASE_HOST
-          value: postgresql
-        - name: DATABASE_NAME
-          valueFrom:
-            secretKeyRef:
-              name: postgresql
-              key: database-name
-        - name: DATABASE_USER
-          valueFrom:
-            secretKeyRef:
-              name: postgresql
-              key: database-user
-        - name: DATABASE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgresql
-              key: database-password
+        - name: DATABASE_URI
+          value: postgresql://postgres:postgres@postgresql:5432/accounts
       restartPolicy: Always

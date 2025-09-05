@@ -15,11 +15,30 @@ spec:
         app: accounts
     spec:
       containers:
-      - image: IMAGE_NAME_HERE
-        name: accounts
-        ports:
-        - containerPort: 8080
-        env:
-        - name: DATABASE_URI
-          value: postgresql://postgres:postgres@postgresql:5432/accounts
+        - name: accounts
+          # The pipeline's deploy task will set/replace this image
+          image: IMAGE_NAME_HERE
+          ports:
+            - containerPort: 8080
+          env:
+            # Use a single connection string from the 'postgresql' Secret
+            - name: DATABASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: database-uri
       restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: accounts
+  labels:
+    app: accounts
+spec:
+  selector:
+    app: accounts
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

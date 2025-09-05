@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: accounts
   labels:
     app: accounts
-  name: accounts
 spec:
   replicas: 3
   selector:
@@ -16,18 +16,15 @@ spec:
     spec:
       containers:
         - name: accounts
-          # The pipeline's deploy task will set/replace this image
           image: IMAGE_NAME_HERE
           ports:
             - containerPort: 8080
           env:
-            # Use a single connection string from the 'postgresql' Secret
             - name: DATABASE_URI
               valueFrom:
                 secretKeyRef:
                   name: postgresql
                   key: database-uri
-      restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
@@ -42,3 +39,4 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
+  type: ClusterIP

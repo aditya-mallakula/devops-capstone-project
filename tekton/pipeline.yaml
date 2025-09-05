@@ -3,21 +3,21 @@ kind: Pipeline
 metadata:
   name: cd-pipeline
 spec:
-  workspaces:
-    - name: pipeline-workspace
+  description: CI/CD pipeline: cleanup -> clone -> (lint & tests) -> build -> deploy
   params:
     - name: repo-url
       type: string
-      description: Git URL of the application repo
+      description: Git repository URL
     - name: branch
       type: string
       default: main
-      description: Git branch to build
     - name: build-image
       type: string
-      description: Full image name (including tag) to build & deploy
+      description: Fully-qualified image (registry/namespace/name:tag)
+  workspaces:
+    - name: pipeline-workspace
+
   tasks:
-    # 1) wipe the workspace
     - name: init
       taskRef:
         name: cleanup
@@ -25,37 +25,34 @@ spec:
         - name: source
           workspace: pipeline-workspace
 
-    # 2) clone source
     - name: clone
-      runAfter: [init]
       taskRef:
         kind: ClusterTask
         name: git-clone
-      workspaces:
-        - name: output
-          workspace: pipeline-workspace
       params:
         - name: url
           value: $(params.repo-url)
         - name: revision
           value: $(params.branch)
-        - name: deleteExisting
-          value: "true"
-        - name: submodules
-          value: "true"
         - name: depth
           value: "1"
+        - name: submodules
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
 
-    # 3) lint (runs in parallel with tests)
     - name: lint
       runAfter: [clone]
       taskRef:
-        name: flake8
+        name: lint
       workspaces:
         - name: source
           workspace: pipeline-workspace
+      params:
+        - name: args
+          value: "."
 
-    # 4) tests (your new nose task)
     - name: tests
       runAfter: [clone]
       taskRef:
@@ -69,7 +66,6 @@ spec:
         - name: args
           value: "-v --with-spec --spec-color"
 
-    # 5) build & push image
     - name: build
       runAfter: [lint, tests]
       taskRef:
@@ -81,11 +77,13 @@ spec:
         - name: image
           value: $(params.build-image)
 
-    # 6) deploy that image (your deploy/oc task applies the manifest)
     - name: deploy
       runAfter: [build]
       taskRef:
         name: oc
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
       params:
         - name: image
           value: $(params.build-image)

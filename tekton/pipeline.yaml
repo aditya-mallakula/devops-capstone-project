@@ -1,100 +1,91 @@
-#
-# This pipeline needs the following tasks from Tekton Hub
-#   - git-clone
-#   - flake8
-#
----
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
-metadata:  
+metadata:
   name: cd-pipeline
 spec:
   workspaces:
     - name: pipeline-workspace
   params:
     - name: repo-url
+      type: string
+      description: Git URL of the application repo
     - name: branch
-    - name: build-image
+      type: string
       default: main
+      description: Git branch to build
+    - name: build-image
+      type: string
+      description: Full image name (including tag) to build & deploy
   tasks:
+    # 1) wipe the workspace
     - name: init
-      workspaces:
-        - name: source
-          workspace: pipeline-workspace          
       taskRef:
         name: cleanup
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
 
+    # 2) clone source
     - name: clone
+      runAfter: [init]
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
       workspaces:
         - name: output
-          workspace: pipeline-workspace          
-      taskRef:
-        name: git-clone
-      params:
-      - name: url
-        value: $(params.repo-url)
-      - name: revision
-        value: $(params.branch)
-      runAfter:
-        - init
-
-    - name: lint
-      workspaces:
-        - name: source
           workspace: pipeline-workspace
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.branch)
+        - name: deleteExisting
+          value: "true"
+        - name: submodules
+          value: "true"
+        - name: depth
+          value: "1"
+
+    # 3) lint (runs in parallel with tests)
+    - name: lint
+      runAfter: [clone]
       taskRef:
         name: flake8
-      params:
-      - name: image
-        value: "python:3.9-slim"
-      - name: args
-        value: ["--count","--max-complexity=10","--max-line-length=127","--statistics"]
-      runAfter:
-        - clone
-
-    - name: tests
       workspaces:
         - name: source
           workspace: pipeline-workspace
+
+    # 4) tests (your new nose task)
+    - name: tests
+      runAfter: [clone]
       taskRef:
         name: nose
-      params:
-      - name: database_uri
-        value: "sqlite:///test.db"
-      - name: args
-        value: "-v --with-spec --spec-color"
-      runAfter:
-        - clone
-
-    - name: build
       workspaces:
         - name: source
           workspace: pipeline-workspace
-      taskRef:
-        name: buildah
-        kind: ClusterTask
       params:
-      - name: IMAGE
-        value: "$(params.build-image)"
-      runAfter:
-        - tests
-        - lint
+        - name: database_uri
+          value: "sqlite:///test.db"
+        - name: args
+          value: "-v --with-spec --spec-color"
 
-    - name: deploy
-      workspaces:
-        - name: manifest-dir
-          workspace: pipeline-workspace
+    # 5) build & push image
+    - name: build
+      runAfter: [lint, tests]
       taskRef:
-        name: openshift-client
-        kind: ClusterTask
+        name: build-and-push
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
       params:
-      - name: SCRIPT
-        value: |
-          echo "Updating manifest..."
-          sed -i "s|IMAGE_NAME_HERE|$(params.build-image)|g" deploy/deployment.yaml
-          cat deploy/deployment.yaml
-          echo "Deploying to OpenShift..."
-          oc apply -f deploy/
-          oc get pods -l app=accounts
-      runAfter:
-        - build
+        - name: image
+          value: $(params.build-image)
+
+    # 6) deploy that image (your deploy/oc task applies the manifest)
+    - name: deploy
+      runAfter: [build]
+      taskRef:
+        name: oc
+      params:
+        - name: image
+          value: $(params.build-image)
